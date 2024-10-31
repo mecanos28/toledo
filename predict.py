@@ -128,9 +128,9 @@ def crear_midi(salida_prediccion):
             tono_duracion, clase_duracion = patron.split('_')
 
             # Determinamos el valor real de duración basado en la clase de duración
-            if clase_duracion == 'short':
+            if clase_duracion == 'corta':
                 duracion = 0.5  # Valor representativo para 'corta'
-            elif clase_duracion == 'medium':
+            elif clase_duracion == 'media':
                 duracion = 1.0  # Valor representativo para 'media'
             else:  # 'long'
                 duracion = 1.5  # Valor representativo para 'larga'
@@ -170,7 +170,7 @@ def crear_midi(salida_prediccion):
     flujo_midi = stream.Stream(notas_salida)
 
     # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='salida_prueba23Oct.mid')
+    flujo_midi.write('midi', fp='salida_prueba30Oct.mid')
 
 if __name__ == '__main__':
     generar()  # Llamamos a la función principal para generar el archivo MIDI
