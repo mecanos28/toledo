@@ -1,112 +1,122 @@
-""" Este módulo genera notas para un archivo MIDI utilizando la red neuronal entrenada con longitudes de notas variables """
+"""
+Este módulo genera notas para un archivo MIDI utilizando el modelo Transformer entrenado con longitudes de notas variables.
+"""
 
 # Importamos las librerías necesarias
 import pickle  # Para cargar y guardar datos en formato binario
-import numpy  # Biblioteca para cálculos numéricos y matrices multidimensionales
+import numpy as np  # Biblioteca para cálculos numéricos y matrices multidimensionales
 from music21 import instrument, note, stream, chord  # Librería para trabajar con datos musicales
-from keras.models import Sequential  # Para crear modelos secuenciales en Keras
-from keras.layers import Dense, Dropout, LSTM, BatchNormalization as BatchNorm, Activation  # Capas de la red neuronal
+from keras.models import Model
+from keras.layers import Input, Dense, Dropout, Embedding, Flatten
+from keras.layers import MultiHeadAttention, LayerNormalization, Add
+from keras.optimizers import Adam
 
 def generar():
-    """ Genera un archivo MIDI de piano """
+    """ Genera un archivo MIDI de piano utilizando el modelo Transformer """
     # Cargamos las notas utilizadas para entrenar el modelo
-    with open('notas', 'rb') as filepath:
+    with open('notas_transformer', 'rb') as filepath:
         notas = pickle.load(filepath)
 
     # Obtenemos todos los nombres de tonos y duraciones
     nombres_notas = sorted(set(notas))
     n_vocab = len(nombres_notas)  # Tamaño del vocabulario
 
-    # Preparamos las secuencias de entrada para la red neuronal
-    entrada_red, entrada_normalizada = preparar_secuencias(notas, nombres_notas, n_vocab)
+    # Preparamos las secuencias de entrada para el modelo
+    entrada_red, int_a_nota = preparar_secuencias(notas, nombres_notas)
 
-    # Creamos la estructura de la red neuronal y cargamos los pesos entrenados
-    modelo = crear_red(entrada_normalizada, n_vocab)
+    # Creamos la estructura del modelo Transformer y cargamos los pesos entrenados
+    modelo = crear_transformer_model(entrada_red, n_vocab)
+
+    # Reemplaza 'pesos_transformer-XX-XXXX.keras' con el nombre real de tu archivo de pesos
+    modelo.load_weights('pesos_transformer-57-0.1235.keras')
 
     # Generamos notas utilizando el modelo entrenado
-    salida_prediccion = generar_notas(modelo, entrada_red, nombres_notas, n_vocab)
+    salida_prediccion = generar_notas(modelo, entrada_red, int_a_nota, n_vocab)
 
     # Creamos un archivo MIDI a partir de las notas generadas
     crear_midi(salida_prediccion)
 
-def preparar_secuencias(notas, nombres_notas, n_vocab):
-    """ Prepara las secuencias utilizadas por la Red Neuronal """
-    # Mapeamos las notas a números enteros
+def preparar_secuencias(notas, nombres_notas):
+    """ Prepara las secuencias utilizadas por el modelo Transformer """
+    # Mapeamos las notas a números enteros y viceversa
     nota_a_int = dict((nota, numero) for numero, nota in enumerate(nombres_notas))
+    int_a_nota = dict((numero, nota) for numero, nota in enumerate(nombres_notas))
 
     longitud_secuencia = 10  # Definimos la longitud de las secuencias de entrada
     entrada_red = []  # Lista para almacenar las secuencias de entrada
 
     # Creamos las secuencias de entrada a partir de las notas
     for i in range(len(notas) - longitud_secuencia):
-        secuencia_entrada = notas[i:i + longitud_secuencia]  # Obtenemos una secuencia de notas
-        entrada_red.append([nota_a_int[char] for char in secuencia_entrada])  # Convertimos las notas a enteros
+        secuencia_entrada = notas[i:i + longitud_secuencia]
+        entrada_red.append([nota_a_int[char] for char in secuencia_entrada])
 
-    n_patrones = len(entrada_red)  # Número total de patrones
+    entrada_red = np.array(entrada_red)
 
-    # Redimensionamos la entrada para que sea compatible con las capas LSTM
-    entrada_normalizada = numpy.reshape(entrada_red, (n_patrones, longitud_secuencia, 1))
-    # Normalizamos los valores de entrada dividiendo por el tamaño del vocabulario
-    entrada_normalizada = entrada_normalizada / float(n_vocab)
+    return entrada_red, int_a_nota  # Devolvemos las secuencias de entrada y el diccionario de conversión
 
-    return entrada_red, entrada_normalizada  # Devolvemos las secuencias de entrada y entrada normalizada
+def crear_transformer_model(entrada_red, n_vocab):
+    """ Crea la estructura del modelo Transformer para predicción """
+    import tensorflow as tf  # Importamos TensorFlow
 
-def crear_red(entrada_red, n_vocab):
-    """ Crea la estructura de la red neuronal """
-    modelo = Sequential()  # Inicializamos el modelo secuencial
+    d_model = 256
+    num_heads = 8
+    dff = 512
 
-    # Agregamos una capa LSTM con 512 unidades, con dropout recurrente y devuelve secuencias
-    modelo.add(LSTM(
-        512,
-        input_shape=(entrada_red.shape[1], entrada_red.shape[2]),
-        recurrent_dropout=0.3,
-        return_sequences=True
-    ))
-    # Agregamos otra capa LSTM similar
-    modelo.add(LSTM(512, return_sequences=True, recurrent_dropout=0.3))
-    # Agregamos una tercera capa LSTM sin devolver secuencias
-    modelo.add(LSTM(512))
-    # Agregamos una capa de normalización por lotes
-    modelo.add(BatchNorm())
-    # Agregamos una capa de dropout para reducir el sobreajuste
-    modelo.add(Dropout(0.3))
-    # Agregamos una capa densa con 256 unidades y activación ReLU
-    modelo.add(Dense(256, activation='relu'))
-    # Otra capa de normalización por lotes
-    modelo.add(BatchNorm())
-    # Otra capa de dropout
-    modelo.add(Dropout(0.3))
-    # Capa de salida con activación softmax
-    modelo.add(Dense(n_vocab, activation='softmax'))
-    # Compilamos el modelo con pérdida de entropía cruzada categórica y optimizador RMSprop
-    modelo.compile(loss='categorical_crossentropy', optimizer='rmsprop')
+    # Obtener input_length desde entrada_red
+    input_length = entrada_red.shape[1]
+    input_length = int(input_length)  # Aseguramos que es un entero
 
-    # Cargamos los pesos entrenados en el modelo
-    modelo.load_weights('pesos-mejora-LSTM-12-nov-176-0.5380-mejor.keras')
+    inputs = Input(shape=(input_length,))
 
-    return modelo  # Devolvemos el modelo creado
+    # Capa de Embedding para las notas
+    embedding = Embedding(input_dim=n_vocab, output_dim=d_model)(inputs)
 
-def generar_notas(modelo, entrada_red, nombres_notas, n_vocab):
-    """ Genera notas a partir de la red neuronal basada en una secuencia de notas """
+    # Capa de Embedding para Positional Encoding
+    positions = tf.range(start=0, limit=input_length, delta=1)
+    positions = positions[tf.newaxis, :]  # Shape: (1, input_length)
+    position_embedding_layer = Embedding(input_dim=input_length, output_dim=d_model)
+    position_embeddings = position_embedding_layer(positions)
+
+    # Sumamos el Embedding y el Positional Encoding
+    x = embedding + position_embeddings  # Broadcasting sobre la dimensión del batch
+
+    # Bloque Transformer
+    attn_output = MultiHeadAttention(num_heads=num_heads, key_dim=d_model)(x, x)
+    attn_output = Dropout(0.1)(attn_output)
+    out1 = LayerNormalization(epsilon=1e-6)(x + attn_output)
+
+    ffn_output = Dense(dff, activation='relu')(out1)
+    ffn_output = Dense(d_model)(ffn_output)
+    ffn_output = Dropout(0.1)(ffn_output)
+    out2 = LayerNormalization(epsilon=1e-6)(out1 + ffn_output)
+
+    # Capa de Salida
+    out_flat = Flatten()(out2)
+    outputs = Dense(n_vocab, activation='softmax')(out_flat)
+
+    model = Model(inputs=inputs, outputs=outputs)
+    model.compile(optimizer=Adam(learning_rate=0.001),
+                  loss='categorical_crossentropy')
+
+    return model
+
+def generar_notas(modelo, entrada_red, int_a_nota, n_vocab):
+    """ Genera notas a partir del modelo Transformer basado en una secuencia de notas """
     # Seleccionamos una secuencia aleatoria de la entrada como punto de inicio
-    inicio = numpy.random.randint(0, len(entrada_red) - 1)
+    inicio = np.random.randint(0, len(entrada_red) - 1) # Para comparar los modelos, este valor debe ser el mismo
+    patron = entrada_red[inicio].tolist()  # Convertimos a lista
 
-    # Mapeamos los números enteros a las notas
-    int_a_nota = dict((numero, nota) for numero, nota in enumerate(nombres_notas))
-
-    patron = entrada_red[inicio]  # Obtenemos el patrón inicial
     salida_prediccion = []  # Lista para almacenar las notas generadas
 
     # Generamos 500 notas
     for indice_nota in range(500):
         # Preparamos la entrada para el modelo
-        entrada_prediccion = numpy.reshape(patron, (1, len(patron), 1))
-        entrada_prediccion = entrada_prediccion / float(n_vocab)
+        entrada_prediccion = np.array([patron])
 
         # Realizamos la predicción de la siguiente nota
         prediccion = modelo.predict(entrada_prediccion, verbose=0)
 
-        indice = numpy.argmax(prediccion)  # Obtenemos el índice con la mayor probabilidad
+        indice = np.argmax(prediccion)  # Obtenemos el índice con la mayor probabilidad
         resultado = int_a_nota[indice]  # Convertimos el índice a nota
         salida_prediccion.append(resultado)  # Agregamos la nota a la salida
 
@@ -132,7 +142,7 @@ def crear_midi(salida_prediccion):
                 duracion = 0.5  # Valor representativo para 'corta'
             elif clase_duracion == 'media':
                 duracion = 1.0  # Valor representativo para 'media'
-            else:  # 'long'
+            else:  # 'larga'
                 duracion = 1.5  # Valor representativo para 'larga'
 
             if '.' in tono_duracion or tono_duracion.isdigit():
@@ -170,7 +180,7 @@ def crear_midi(salida_prediccion):
     flujo_midi = stream.Stream(notas_salida)
 
     # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='toledo_salida_LSTM_12_nov.mid')
+    flujo_midi.write('midi', fp='toledo_salida_transformer_12_nov.mid')
     print("Archivo MIDI generado con éxito")
 
 if __name__ == '__main__':

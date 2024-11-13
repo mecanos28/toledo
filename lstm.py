@@ -148,7 +148,7 @@ def crear_red(entrada_red, n_vocab):
 def entrenar_modelo(modelo, entrada_red, salida_red):
     """ Entrena la red neuronal """
     # Define la ruta del archivo donde se guardarán los pesos del modelo
-    filepath = "pesos-mejora-midis-gino-{epoch:02d}-{loss:.4f}-mejor.keras"
+    filepath = "pesos-mejora-LSTM-12-nov-{epoch:02d}-{loss:.4f}-mejor.keras"
 
     # Crea un checkpoint para guardar el modelo cada vez que se alcance una nueva mejor pérdida
     checkpoint = ModelCheckpoint(
