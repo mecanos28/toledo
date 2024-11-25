@@ -82,7 +82,7 @@ def crear_red(entrada_red, n_vocab):
     modelo.compile(loss='categorical_crossentropy', optimizer='rmsprop')
 
     # Cargamos los pesos entrenados en el modelo
-    modelo.load_weights('pesos-mejora-LSTM-12-nov-176-0.5380-mejor.keras')
+    modelo.load_weights('pesos-mejora-LSTM-12-nov-198-0.5207-mejor.keras')
 
     return modelo  # Devolvemos el modelo creado
 
@@ -170,7 +170,7 @@ def crear_midi(salida_prediccion):
     flujo_midi = stream.Stream(notas_salida)
 
     # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='toledo_salida_LSTM_12_nov.mid')
+    flujo_midi.write('midi', fp='toledo_salida_LSTM_24_nov.mid')
     print("Archivo MIDI generado con éxito")
 
 if __name__ == '__main__':

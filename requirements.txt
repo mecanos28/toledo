@@ -6,3 +6,4 @@ music21~=6.7.1
 matplotlib~=3.7.3
 seaborn~=0.11.2
 scikit-learn~=1.5.2
+transformers~=4.46.3

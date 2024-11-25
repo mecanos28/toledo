@@ -180,7 +180,7 @@ def crear_midi(salida_prediccion):
     flujo_midi = stream.Stream(notas_salida)
 
     # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='toledo_salida_transformer_12_nov.mid')
+    flujo_midi.write('midi', fp='toledo_salida_transformer_24_nov.mid')
     print("Archivo MIDI generado con éxito")
 
 if __name__ == '__main__':
