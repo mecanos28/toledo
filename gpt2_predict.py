@@ -33,10 +33,9 @@ def generar_musica_gpt2(longitud_generacion=500):
     with open('notas_gpt2', 'rb') as filepath:
         notas = pickle.load(filepath)
 
-    # Seleccionar una sección aleatoria como semilla
+    # Usar las primeras 'longitud_semilla' notas como semilla
     longitud_semilla = 50  # Puedes ajustar la longitud de la semilla
-    indice_inicio = random.randint(0, len(notas) - longitud_semilla - 1)
-    semilla_lista = notas[indice_inicio:indice_inicio + longitud_semilla]
+    semilla_lista = notas[:longitud_semilla]
     semilla = ' '.join(semilla_lista)
 
     print(f"Semilla inicial utilizada: {semilla}")
@@ -80,53 +79,81 @@ def crear_midi_gpt2(notas_generadas):
     notas_salida = []
 
     for patron in notas_generadas:
+        if not patron.strip():
+            continue  # Saltar patrones vacíos
         if '_' in patron:
-            tono_duracion, clase_duracion = patron.split('_')
+            partes = patron.split('_')
+            if len(partes) != 2:
+                print(f"Patrón inválido (formato incorrecto): '{patron}'")
+                continue
+            tono_duracion, clase_duracion = partes
 
             if clase_duracion == 'corta':
                 duracion = 0.5
             elif clase_duracion == 'media':
                 duracion = 1.0
-            else:
+            elif clase_duracion == 'larga':
                 duracion = 1.5
+            else:
+                print(f"Clase de duración inválida: '{clase_duracion}' en patrón '{patron}'")
+                continue
 
-            if '.' in tono_duracion or tono_duracion.isdigit():
+            if tono_duracion.isdigit() or '.' in tono_duracion:
                 # El patrón es un acorde
                 notas_en_acorde = tono_duracion.split('.')
                 notas = []
                 for nota_actual in notas_en_acorde:
-                    nueva_nota = note.Note(int(nota_actual))
-                    nueva_nota.duration.quarterLength = duracion
-                    nueva_nota.storedInstrument = instrument.Piano()
-                    notas.append(nueva_nota)
-                nuevo_acorde = chord.Chord(notas)
-                nuevo_acorde.offset = offset
-                nuevo_acorde.duration.quarterLength = duracion
-                notas_salida.append(nuevo_acorde)
+                    try:
+                        pitch_value = int(nota_actual)
+                        nueva_nota = note.Note(pitch_value)
+                        nueva_nota.duration.quarterLength = duracion
+                        nueva_nota.storedInstrument = instrument.Piano()
+                        notas.append(nueva_nota)
+                    except ValueError:
+                        print(f"Valor de nota inválido en acorde: '{nota_actual}' en patrón '{patron}'")
+                if notas:
+                    nuevo_acorde = chord.Chord(notas)
+                    nuevo_acorde.offset = offset
+                    nuevo_acorde.duration.quarterLength = duracion
+                    notas_salida.append(nuevo_acorde)
+                else:
+                    print(f"No se pudieron crear notas válidas para el acorde en patrón '{patron}'")
             else:
                 # El patrón es una nota
-                nueva_nota = note.Note(tono_duracion)
+                try:
+                    nueva_nota = note.Note(tono_duracion)
+                    nueva_nota.offset = offset
+                    nueva_nota.duration.quarterLength = duracion
+                    nueva_nota.storedInstrument = instrument.Piano()
+                    notas_salida.append(nueva_nota)
+                except Exception as e:
+                    print(f"Error al crear nota '{tono_duracion}' en patrón '{patron}': {e}")
+                    continue
+        else:
+            # Manejar casos donde falta la duración
+            try:
+                nueva_nota = note.Note(patron)
                 nueva_nota.offset = offset
-                nueva_nota.duration.quarterLength = duracion
+                nueva_nota.duration.quarterLength = 0.5  # Duración por defecto
                 nueva_nota.storedInstrument = instrument.Piano()
                 notas_salida.append(nueva_nota)
-        else:
-            # Manejar casos donde falta la duración (opcional)
-            nueva_nota = note.Note(patron)
-            nueva_nota.offset = offset
-            nueva_nota.storedInstrument = instrument.Piano()
-            notas_salida.append(nueva_nota)
-            duracion = 0.5
+            except Exception as e:
+                print(f"Error al crear nota '{patron}': {e}")
+                continue
 
         # Incrementamos el offset por la duración para evitar que las notas se superpongan
         offset += duracion
 
-    # Creamos un stream de música con las notas generadas
-    flujo_midi = stream.Stream(notas_salida)
+    if notas_salida:
+        # Creamos un stream de música con las notas generadas
+        flujo_midi = stream.Stream(notas_salida)
 
-    # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='toledo_salida_gpt2_24_nov.mid')
-    print("Archivo MIDI generado con éxito")
+        # Escribimos el stream en un archivo MIDI
+        flujo_midi.write('midi', fp='toledo_salida_gpt2_26_nov_v2.mid')
+        print("Archivo MIDI generado con éxito")
+    else:
+        print("No se generaron notas válidas para crear el archivo MIDI.")
+
 
 if __name__ == '__main__':
     generar()

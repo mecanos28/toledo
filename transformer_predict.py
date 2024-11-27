@@ -102,9 +102,8 @@ def crear_transformer_model(entrada_red, n_vocab):
 
 def generar_notas(modelo, entrada_red, int_a_nota, n_vocab):
     """ Genera notas a partir del modelo Transformer basado en una secuencia de notas """
-    # Seleccionamos una secuencia aleatoria de la entrada como punto de inicio
-    inicio = np.random.randint(0, len(entrada_red) - 1) # Para comparar los modelos, este valor debe ser el mismo
-    patron = entrada_red[inicio].tolist()  # Convertimos a lista
+    # Usar la primera secuencia de entrada como punto de inicio
+    patron = entrada_red[0].tolist()  # Convertimos a lista
 
     salida_prediccion = []  # Lista para almacenar las notas generadas
 
@@ -180,7 +179,7 @@ def crear_midi(salida_prediccion):
     flujo_midi = stream.Stream(notas_salida)
 
     # Escribimos el stream en un archivo MIDI
-    flujo_midi.write('midi', fp='toledo_salida_transformer_24_nov.mid')
+    flujo_midi.write('midi', fp='toledo_salida_transformer_26_nov.mid')
     print("Archivo MIDI generado con éxito")
 
 if __name__ == '__main__':
