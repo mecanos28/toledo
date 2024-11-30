@@ -68,7 +68,7 @@ def obtener_notas():
                 notas.append(acorde_str)
 
     # Guardamos las notas en un archivo para usarlas posteriormente
-    with open('notas_gpt2', 'wb') as filepath:
+    with open('notas_modelos/notas_gpt2', 'wb') as filepath:
         pickle.dump(notas, filepath)
     logger.info(f"Total de notas extraídas: {len(notas)}")
     return notas

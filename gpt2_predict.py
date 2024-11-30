@@ -30,7 +30,7 @@ def generar_musica_gpt2(longitud_generacion=500):
     )
 
     # Cargar las notas almacenadas
-    with open('notas_gpt2', 'rb') as filepath:
+    with open('notas_modelos/notas_gpt2', 'rb') as filepath:
         notas = pickle.load(filepath)
 
     # Usar las primeras 'longitud_semilla' notas como semilla

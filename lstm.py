@@ -71,7 +71,7 @@ def obtener_notas():
                 notas.append(acorde_str)  # Agrega el acorde a la lista
 
     # Guarda la lista de notas en un archivo utilizando pickle
-    with open('notas', 'wb') as filepath:
+    with open('notas_modelos/notas', 'wb') as filepath:
         pickle.dump(notas, filepath)
 
     return notas  # Devuelve la lista de notas

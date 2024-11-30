@@ -59,7 +59,7 @@ def obtener_notas():
                 acorde_str = f"{'.'.join(str(n) for n in elemento.normalOrder)}_{clase_duracion}"
                 notas.append(acorde_str)
 
-    with open('notas_transformer', 'wb') as filepath:
+    with open('notas_modelos/notas_transformer', 'wb') as filepath:
         pickle.dump(notas, filepath)
 
     return notas

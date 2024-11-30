@@ -14,7 +14,7 @@ from keras.optimizers import Adam
 def generar():
     """ Genera un archivo MIDI de piano utilizando el modelo Transformer """
     # Cargamos las notas utilizadas para entrenar el modelo
-    with open('notas_transformer', 'rb') as filepath:
+    with open('notas_modelos/notas_transformer', 'rb') as filepath:
         notas = pickle.load(filepath)
 
     # Obtenemos todos los nombres de tonos y duraciones

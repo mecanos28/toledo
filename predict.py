@@ -10,7 +10,7 @@ from keras.layers import Dense, Dropout, LSTM, BatchNormalization as BatchNorm, 
 def generar():
     """ Genera un archivo MIDI de piano """
     # Cargamos las notas utilizadas para entrenar el modelo
-    with open('notas', 'rb') as filepath:
+    with open('notas_modelos/notas', 'rb') as filepath:
         notas = pickle.load(filepath)
 
     # Obtenemos todos los nombres de tonos y duraciones
