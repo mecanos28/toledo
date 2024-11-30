@@ -108,8 +108,9 @@ Toledo supports three different models for music generation: **LSTM**, **Transfo
 1. **Ensure Model Weights are Trained**
 
    Make sure you have trained the LSTM model and have the weights saved (e.g., `pesos-mejora-LSTM-12-nov-198-0.5207-mejor.keras`).
+   In code, change pre-trained model name in the prediction file.
 
-2. **Run the Prediction Script**
+3. **Run the Prediction Script**
 
    ```bash
    python predict.py
@@ -148,7 +149,7 @@ Toledo supports three different models for music generation: **LSTM**, **Transfo
 
 1. **Ensure Model Weights are Trained**
 
-   Confirm that you have trained the Transformer model and have the weights saved (e.g., `pesos_transformer-57-0.1235.keras`).
+   Confirm that you have trained the Transformer model and have the weights saved (e.g., `pesos_transformer-57-0.1235.keras`). In code, change pre-trained model name in the prediction file.
 
 2. **Run the Prediction Script**
 
