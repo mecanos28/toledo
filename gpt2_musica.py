@@ -100,7 +100,7 @@ def ajustar_gpt2():
     dataset = TextDataset(
         tokenizer=tokenizer,
         file_path='datos_gpt2.txt',
-        block_size=128  # Tamaño de la secuencia
+        block_size=128
     )
 
     data_collator = DataCollatorForLanguageModeling(
